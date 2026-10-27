@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Clone - Progressive Difficulty</title>
+    <style>
+        body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #333; }
+        canvas { border: 2px solid #fff; background-color: #70c5ce; display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="320" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        let bird = { x: 50, y: 150, gravity: 0.6, jump: -8, velocity: 0, radius: 10 };
+        let pipes = [];
+        let score = 0;
+        let gameActive = true;
+        let pipeSpeed = 2;
+        let pipeGap = 120;
+        let pipeFrequency = 120;
+        let frameCount = 0;
+
+        pipes[0] = { x: canvas.width, y: 50, gap: pipeGap, width: 40 };
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Bird
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+            ctx.fillStyle = "yellow";
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Progressive Difficulty
+            if (score > 0 && score % 5 === 0) {
+                pipeSpeed = 2 + Math.floor(score / 5) * 0.2;
+                pipeGap = Math.max(80, 120 - Math.floor(score / 5) * 5);
+            }
+
+            // Pipes
+            for (let i = 0; i < pipes.length; i++) {
+                ctx.fillStyle = "green";
+                ctx.fillRect(pipes[i].x, 0, pipes[i].width, pipes[i].y);
+                ctx.fillRect(pipes[i].x, pipes[i].y + pipes[i].gap, pipes[i].width, canvas.height - pipes[i].y - pipes[i].gap);
+
+                pipes[i].x -= pipeSpeed;
+
+                if (pipes[i].x === canvas.width - pipeFrequency) {
+                    pipes.push({
+                        x: canvas.width,
+                        y: Math.floor(Math.random() * (canvas.height - pipeGap - 100)) + 50,
+                        gap: pipeGap,
+                        width: 40
+                    });
+                }
+
+                // Collision
+                if (bird.x + bird.radius > pipes[i].x && bird.x - bird.radius < pipes[i].x + pipes[i].width &&
+                    (bird.y - bird.radius < pipes[i].y || bird.y + bird.radius > pipes[i].y + pipes[i].gap)) {
+                    resetGame();
+                }
+
+                if (pipes[i].x + pipes[i].width < 0) {
+                    pipes.shift();
+                    score++;
+                }
+            }
+
+            if (bird.y + bird.radius > canvas.height || bird.y - bird.radius < 0) {
+                resetGame();
+            }
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 10, 25);
+
+            if (gameActive) {
+                requestAnimationFrame(draw);
+            }
+        }
+
+        function resetGame() {
+            bird.y = 150;
+            bird.velocity = 0;
+            pipes = [];
+            pipes[0] = { x: canvas.width, y: 50, gap: 120, width: 40 };
+            score = 0;
+            pipeSpeed = 2;
+            pipeGap = 120;
+        }
+
+        window.addEventListener("keydown", function(e) {
+            if (e.code === "Space") {
+                bird.velocity = bird.jump;
+            }
+        });
+
+        canvas.addEventListener("touchstart", function() {
+            bird.velocity = bird.jump;
+        });
+
+        draw();
+    </script>
+</body>
+</html>
+
